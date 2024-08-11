@@ -2,9 +2,6 @@
 import lightgbm as lgb
 import numpy as np
 import pandas as pd
-from lightgbm import (
-    LGBMClassifier,
-)
 from sklearn.impute import (
     SimpleImputer,
 )
@@ -85,7 +82,7 @@ def prepare_data(train_df: pd.DataFrame, test_df: pd.DataFrame) -> tuple[np.ndar
     return X, y, test_x
 
 # Cross-validation and model training
-def train_and_evaluate(X: np.ndarray, y: np.ndarray, test_x: np.ndarray) -> np.ndarray:
+def train_and_evaluate(X: np.ndarray, y: np.ndarray, test_x: np.ndarray, cfg: dict) -> np.ndarray:
     """Train and evaluate."""
     num_cv = 10
     kf = KFold(n_splits=num_cv, shuffle=True, random_state=RANDOM_SEED)
@@ -97,9 +94,12 @@ def train_and_evaluate(X: np.ndarray, y: np.ndarray, test_x: np.ndarray) -> np.n
         y_train, y_val = y[train_index], y[val_index]
 
         # Train LightGBM model
-        lgbm = LGBMClassifier(random_state=RANDOM_SEED, n_estimators=100, max_depth=6, learning_rate=0.1, verbose=-1)
+        lgbm = lgb.LGBMClassifier(**cfg)
         lgbm.fit(X_train, y_train, eval_set=[(X_val, y_val)],
-                 callbacks=[lgb.early_stopping(5, first_metric_only=True), lgb.log_evaluation(period=10)])
+                 callbacks=[
+                    lgb.early_stopping(5, first_metric_only=True),
+                    lgb.log_evaluation(period=10),
+                ])
 
         # Evaluate the model
         y_pred = lgbm.predict(X_val)
@@ -117,9 +117,17 @@ def train_and_evaluate(X: np.ndarray, y: np.ndarray, test_x: np.ndarray) -> np.n
 # Main function to execute the workflow
 def main() -> None:
     """Train and Inference."""
+    cfg = {
+        "random_state": RANDOM_SEED,
+        "n_estimators": 100,
+        "max_depth": 6,
+        "learning_rate": 0.1,
+        "verbose": -1,
+    }
+
     train_df, test_df = load_data()
     X, y, test_x = prepare_data(train_df, test_df)
-    test_predictions = train_and_evaluate(X, y, test_x)
+    test_predictions = train_and_evaluate(X, y, test_x, cfg)
 
     # Create submission file
     PassengerId = test_df["PassengerId"]  # Ensure PassengerId is correctly referenced
