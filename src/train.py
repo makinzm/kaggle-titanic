@@ -15,6 +15,12 @@ from sklearn.preprocessing import (
     LabelEncoder,
 )
 
+import wandb
+from wandb.integration.lightgbm import (
+    log_summary,
+    wandb_callback,
+)
+
 RANDOM_SEED = 42
 
 # Load datasets
@@ -99,6 +105,7 @@ def train_and_evaluate(X: np.ndarray, y: np.ndarray, test_x: np.ndarray, cfg: di
                  callbacks=[
                     lgb.early_stopping(5, first_metric_only=True),
                     lgb.log_evaluation(period=10),
+                    wandb_callback(),
                 ])
 
         # Evaluate the model
@@ -108,10 +115,15 @@ def train_and_evaluate(X: np.ndarray, y: np.ndarray, test_x: np.ndarray, cfg: di
         print(f"{i+1}/{num_cv}::: CV Result({accuracy})")
         # Predict on the test set
         test_predictions += lgbm.predict_proba(test_x)[:, 1]
+        log_summary(lgbm.booster_, save_model_checkpoint=True)
+        wandb.log({
+            "CV Accuracy Fold": accuracy,
+            "Feature Importance": wandb.Table(data=[[f, imp] for f, imp in zip(range(len(lgbm.feature_importances_)), lgbm.feature_importances_, strict=False)],
+                                                          columns=["Feature", "Importance"]),
+        })
 
     print(f"Mean CV Accuracy: {np.mean(cv_scores):.4f}")
     print(f"Standard Deviation of CV Accuracy: {np.std(cv_scores):.4f}")
-
     return test_predictions / kf.get_n_splits()
 
 # Main function to execute the workflow
@@ -124,6 +136,10 @@ def main() -> None:
         "learning_rate": 0.1,
         "verbose": -1,
     }
+    wandb.init(
+        project = "kaggle-titanic-init",
+        config = cfg,
+    )
 
     train_df, test_df = load_data()
     X, y, test_x = prepare_data(train_df, test_df)
@@ -134,6 +150,8 @@ def main() -> None:
     threshold = 0.5
     submission = pd.DataFrame({"PassengerId": PassengerId, "Survived": (test_predictions > threshold).astype(np.int32)})
     submission.to_csv("my_submission.csv", index=False)
+
+    wandb.finish()
 
 if __name__ == "__main__":
     main()
