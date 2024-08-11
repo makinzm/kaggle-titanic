@@ -16,6 +16,8 @@ dependencies = [
     "optuna>=3.6.1",
     "matplotlib>=3.9.1.post1",
     "seaborn>=0.13.2",
+    "scikit-learn>=1.5.1",
+    "numpy>=2.0.1",
 ]
 readme = "README.md"
 requires-python = ">= 3.12"
@@ -24,3 +26,28 @@ requires-python = ">= 3.12"
 managed = true
 dev-dependencies = []
 
+[tool.ruff]
+# Set the maximum line length to 79.
+line-length = 20
+
+[tool.ruff.lint]
+select = [
+    "ALL"
+]
+ignore = [
+    "N802",     # Function Name
+    "N803",     # Argument Name
+    "N806",     # Variable Name
+    "N816",     # mixed Case Name
+    "N999",     # File name
+    "D205",     # Blank Line
+    "D415",     # End punctuation
+    "E501",     # line length
+    "TRY003",   # Try Specifying Message
+    "ANN204",   # __init__ return type
+    "INP001",   # require __init__.py
+    "T201",     # print
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
