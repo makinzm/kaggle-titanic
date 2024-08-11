@@ -87,24 +87,25 @@ def prepare_data(train_df: pd.DataFrame, test_df: pd.DataFrame) -> tuple[np.ndar
 # Cross-validation and model training
 def train_and_evaluate(X: np.ndarray, y: np.ndarray, test_x: np.ndarray) -> np.ndarray:
     """Train and evaluate."""
-    kf = KFold(n_splits=10, shuffle=True, random_state=RANDOM_SEED)
+    num_cv = 10
+    kf = KFold(n_splits=num_cv, shuffle=True, random_state=RANDOM_SEED)
     cv_scores = []
     test_predictions = np.zeros(test_x.shape[0])
 
-    for train_index, val_index in kf.split(X):
+    for i, (train_index, val_index) in enumerate(kf.split(X)):
         X_train, X_val = X[train_index], X[val_index]
         y_train, y_val = y[train_index], y[val_index]
 
         # Train LightGBM model
-        lgbm = LGBMClassifier(random_state=RANDOM_SEED, n_estimators=100, max_depth=6, learning_rate=0.1)
+        lgbm = LGBMClassifier(random_state=RANDOM_SEED, n_estimators=100, max_depth=6, learning_rate=0.1, verbose=-1)
         lgbm.fit(X_train, y_train, eval_set=[(X_val, y_val)],
-                 callbacks=[lgb.early_stopping(5, first_metric_only=True)])
+                 callbacks=[lgb.early_stopping(5, first_metric_only=True), lgb.log_evaluation(period=10)])
 
         # Evaluate the model
         y_pred = lgbm.predict(X_val)
         accuracy = accuracy_score(y_val, y_pred)
         cv_scores.append(accuracy)
-
+        print(f"{i+1}/{num_cv}::: CV Result({accuracy})")
         # Predict on the test set
         test_predictions += lgbm.predict_proba(test_x)[:, 1]
 

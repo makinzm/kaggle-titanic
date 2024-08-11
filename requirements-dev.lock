@@ -125,6 +125,7 @@ sqlalchemy==2.0.32
 threadpoolctl==3.5.0
     # via scikit-learn
 tqdm==4.66.5
+    # via kaggle-titanic
     # via optuna
 typing-extensions==4.12.2
     # via alembic
