@@ -1,0 +1,15 @@
+[project]
+name = "kaggle-titanic"
+version = "0.1.0"
+description = "Learning how to compete in Kaggle competitions"
+authors = [
+    { name = "makinzm", email = "invalid@invalid.invalid" }
+]
+dependencies = []
+readme = "README.md"
+requires-python = ">= 3.12"
+
+[tool.rye]
+managed = true
+dev-dependencies = []
+
