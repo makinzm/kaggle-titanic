@@ -53,6 +53,8 @@ markupsafe==2.1.5
 matplotlib==3.9.1.post1
     # via kaggle-titanic
     # via seaborn
+nodeenv==1.9.1
+    # via pyright
 numpy==2.0.1
     # via contourpy
     # via kaggle-titanic
@@ -84,10 +86,10 @@ protobuf==5.27.3
     # via wandb
 psutil==6.0.0
     # via wandb
-pylyzer==0.0.58
-    # via kaggle-titanic
 pyparsing==3.1.2
     # via matplotlib
+pyright==1.1.376
+    # via kaggle-titanic
 python-dateutil==2.9.0.post0
     # via matplotlib
     # via pandas
