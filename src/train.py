@@ -88,12 +88,13 @@ def prepare_data(train_df: pd.DataFrame, test_df: pd.DataFrame) -> tuple[np.ndar
     return X, y, test_x
 
 # Cross-validation and model training
-def train_and_evaluate(X: np.ndarray, y: np.ndarray, test_x: np.ndarray, cfg: dict) -> np.ndarray:
+def train_and_evaluate(X: np.ndarray, y: np.ndarray, test_x: np.ndarray, cfg: dict) -> tuple[np.ndarray, np.ndarray]:
     """Train and evaluate."""
     num_cv = 10
     kf = KFold(n_splits=num_cv, shuffle=True, random_state=RANDOM_SEED)
     cv_scores = []
     test_predictions = np.zeros(test_x.shape[0])
+    cv_predictions = np.zeros(X.shape[0])
 
     for i, (train_index, val_index) in enumerate(kf.split(X)):
         X_train, X_val = X[train_index], X[val_index]
@@ -121,10 +122,20 @@ def train_and_evaluate(X: np.ndarray, y: np.ndarray, test_x: np.ndarray, cfg: di
             "Feature Importance": wandb.Table(data=[[f, imp] for f, imp in zip(range(len(lgbm.feature_importances_)), lgbm.feature_importances_, strict=False)],
                                                           columns=["Feature", "Importance"]),
         })
+        cv_predictions[val_index] = y_pred
 
     print(f"Mean CV Accuracy: {np.mean(cv_scores):.4f}")
     print(f"Standard Deviation of CV Accuracy: {np.std(cv_scores):.4f}")
-    return test_predictions / kf.get_n_splits()
+    return test_predictions / kf.get_n_splits(), cv_predictions
+
+def plot_wrong_cv(df: pd.DataFrame, cv_prediction: np.ndarray, order: int = 100) -> None:
+    """Plot wrong predictions."""
+    wrong_indices = np.where(df["Survived"] != cv_prediction)[0]
+    wrong_indices = wrong_indices[:order]
+    for i in wrong_indices:
+        print(f"Index: {i}, Survived: {df['Survived'].iloc[i]}, Predicted: {cv_prediction[i]}")
+        print(f"Data: {df.iloc[i]}")
+        print("")
 
 # Main function to execute the workflow
 def main() -> None:
@@ -143,7 +154,9 @@ def main() -> None:
 
     train_df, test_df = load_data()
     X, y, test_x = prepare_data(train_df, test_df)
-    test_predictions = train_and_evaluate(X, y, test_x, cfg)
+    test_predictions, cv_prediction = train_and_evaluate(X, y, test_x, cfg)
+
+    plot_wrong_cv(train_df, cv_prediction, order=100)
 
     # Create submission file
     PassengerId = test_df["PassengerId"]  # Ensure PassengerId is correctly referenced
